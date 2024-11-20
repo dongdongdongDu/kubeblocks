@@ -37,6 +37,7 @@ CLI_IMG ?= docker.io/apecloud/kbcli
 CHARTS_IMG ?= docker.io/apecloud/$(APP_NAME)-charts
 CLI_TAG ?= v$(CLI_VERSION)
 DATAPROTECTION_IMG ?= docker.io/apecloud/$(APP_NAME)-dataprotection
+SHELL2HTTP_IMG ?= docker.io/apecloud/shell2http
 
 # Update whenever you upgrade dev container image
 DEV_CONTAINER_VERSION_TAG ?= latest
@@ -184,4 +185,20 @@ ifeq ($(TAG_LATEST), true)
 else
 	$(DOCKER) buildx build . $(DOCKER_BUILD_ARGS) --file $(DOCKERFILE_DIR)/Dockerfile-dataprotection --platform $(BUILDX_PLATFORMS) --tag ${DATAPROTECTION_IMG}:${VERSION} --push
 endif
+endif
+
+.PHONY: build-shell2http-image
+build-shell2http-image: install-docker-buildx ## Build shell2http container image.
+ifneq ($(BUILDX_ENABLED), true)
+	$(DOCKER) build . $(DOCKER_BUILD_ARGS) --file $(DOCKERFILE_DIR)/Dockerfile-shell2http --tag ${SHELL2HTTP_IMG}:v1.16.0
+else
+	$(DOCKER) buildx build . $(DOCKER_BUILD_ARGS) --file $(DOCKERFILE_DIR)/Dockerfile-shell2http --platform $(BUILDX_PLATFORMS) --tag ${SHELL2HTTP_IMG}:v1.16.0
+endif
+
+.PHONY: push-shell2http-image
+push-shell2http-image: install-docker-buildx ## Push shell2http container image.
+ifneq ($(BUILDX_ENABLED), true)
+	$(DOCKER) push ${SHELL2HTTP_IMG}:v1.16.0
+else
+	$(DOCKER) buildx build . $(DOCKER_BUILD_ARGS) --file $(DOCKERFILE_DIR)/Dockerfile-shell2http --platform $(BUILDX_PLATFORMS) --tag ${SHELL2HTTP_IMG}:v1.16.0 --push
 endif

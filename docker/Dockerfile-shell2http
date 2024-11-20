@@ -1,0 +1,29 @@
+ARG DIST_IMG=gcr.io/distroless/static:nonroot
+ARG GO_VERSION=1.21-alpine
+
+FROM --platform=${BUILDPLATFORM} golang:${GO_VERSION} as builder
+
+ARG TARGETOS
+ARG TARGETARCH
+ARG GOPROXY
+ARG LD_FLAGS="-s -w"
+
+ENV GOPROXY=${GOPROXY}
+
+WORKDIR /src
+
+# Install shell2http
+RUN --mount=type=cache,target=/go/pkg/mod \
+    go install github.com/msoap/shell2http@v1.16.0
+
+# Copy binary to /app directory as required by KubeBlocks
+RUN mkdir -p /app && cp $(go env GOPATH)/bin/shell2http /app/
+
+# Use distroless as minimal base image
+FROM ${DIST_IMG} as dist
+
+WORKDIR /
+COPY --from=builder /app/shell2http /app/shell2http
+USER 65532:65532
+
+ENTRYPOINT ["/app/shell2http"]
